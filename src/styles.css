@@ -1,0 +1,14 @@
+.app-container {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  
+  header, footer {
+    text-align: center;
+    padding: 10px;
+    background-color: #f4f4f4;
+  }
+  
+  main {
+    margin-top: 20px;
+  }
