@@ -18,9 +18,20 @@ function ScannerComponent() {
         },
         target: document.querySelector('#scanner-container')
       },
+      locator: {
+        patchSize: "medium",
+        halfSample: true
+      },
+      numOfWorkers: 4,
       decoder: {
-        readers: ["code_128_reader"]
-      }
+        readers: ["code_39_reader", "code_39_extended_reader"]
+      },
+      locate: true,
+      drawScanline: true,
+      drawBoundingBox: true,
+      showPattern: true,
+      drawLocator: true,
+      multiple: false
     }, (err) => {
       if (err) {
         console.error("Error al inicializar Quagga:", err);
@@ -32,10 +43,33 @@ function ScannerComponent() {
 
     Quagga.onDetected((result) => {
       const code = result.codeResult.code;
-      alert("Entrega confirmada para el código: " + code);
       sendEmail(code, localNumber);
       Quagga.stop();
       setIsScanning(false);
+    });
+
+    Quagga.onProcessed(function(result) {
+      var drawingCtx = Quagga.canvas.ctx.overlay,
+          drawingCanvas = Quagga.canvas.dom.overlay;
+
+      if (result) {
+        if (result.boxes) {
+          drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
+          result.boxes.filter(function (box) {
+            return box !== result.box;
+          }).forEach(function (box) {
+            Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
+          });
+        }
+
+        if (result.box) {
+          Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "#00F", lineWidth: 2});
+        }
+
+        if (result.codeResult && result.codeResult.code) {
+          Quagga.ImageDebug.drawPath(result.line, {x: 'x', y: 'y'}, drawingCtx, {color: "red", lineWidth: 3});
+        }
+      }
     });
   };
 
@@ -45,9 +79,9 @@ function ScannerComponent() {
       localNumber: localNumber,
     };
 
-    emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams, 'YOUR_USER_ID')
+    emailjs.send('service_159lgyl', 'template_qouw3so', templateParams, 'cataYOEwOQrXCUnMT')
       .then((response) => {
-        alert('Correo enviado con éxito!');
+        alert(`La entrega fue notificada. Código de barras: ${code}`);
       }, (error) => {
         alert('Error al enviar el correo:', error);
       });
@@ -64,7 +98,13 @@ function ScannerComponent() {
       />
       <br />
       {!isScanning && <button onClick={startScanning}>Escanear</button>}
-      <div id="scanner-container"></div>
+      <div id="scanner-container">
+        {isScanning && (
+          <div className="scanning-overlay">
+            <div className="spinner"></div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
