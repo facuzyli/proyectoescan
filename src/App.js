@@ -1,81 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import Scanner from './Scanner';
-import emailjs from 'emailjs-com';
+import React, { useState } from 'react';
+import Quagga from '@ericblade/quagga2';
 
-function App() {
-  const [localNumber, setLocalNumber] = useState('');
-  const [scannedCode, setScannedCode] = useState('');
+function ScannerComponent() {
+  const [isScanning, setIsScanning] = useState(false);
 
-  const sendEmail = (localNum, scannedCod) => {
-    const templateParams = {
-      localNumber: localNum,
-      scannedCode: scannedCod
-    };
-
-    emailjs.send('service_159lgyl', 'template_qouw3so', templateParams, 'cataYOEwOQrXCUnMT')
-      .then((response) => {
-         console.log('Email successfully sent!', response);
-      })
-      .catch((error) => {
-         console.error('Email sending error:', error);
-      });
-  }
-
-  const handleScan = (code) => {
-    console.log("Código escaneado:", code);
-    setScannedCode(code);
-
-    const isConnected = window.navigator.onLine;
-    if (isConnected) {
-      sendEmail(localNumber, code);
-    } else {
-      const pendingEmails = JSON.parse(localStorage.getItem('pendingEmails') || '[]');
-      pendingEmails.push({ localNumber, scannedCode: code });
-      localStorage.setItem('pendingEmails', JSON.stringify(pendingEmails));
-    }
-  };
-
-  const sendPendingEmails = () => {
-    const pendingEmails = JSON.parse(localStorage.getItem('pendingEmails') || '[]');
-    
-    pendingEmails.forEach(email => {
-      const { localNumber, scannedCode } = email;
-      sendEmail(localNumber, scannedCode);
+  const startScanning = () => {
+    setIsScanning(true);
+    // Configuración de Quagga
+    Quagga.init({
+      inputStream: {
+        type: "LiveStream",
+        constraints: {
+          width: 780,
+          height: 480,
+          facingMode: "environment" // Usa la cámara trasera si está disponible
+        },
+        target: document.querySelector('#scanner-container') // Pasando el elemento directamente
+      },
+      decoder: {
+        readers: ["code_128_reader"] // Aquí puedes agregar otros formatos si es necesario
+      }
+    }, (err) => {
+      if (err) {
+        console.error("Error al inicializar Quagga:", err);
+        setIsScanning(false);
+        return;
+      }
+      Quagga.start();
     });
-
-    localStorage.removeItem('pendingEmails');
   };
-
-  useEffect(() => {
-    window.addEventListener('online', sendPendingEmails);
-
-    return () => {
-      window.removeEventListener('online', sendPendingEmails);
-    };
-  }, []);
 
   return (
-    <div className="app-container">
-      <header>
-        <h1>Escáner de código de barras</h1>
-      </header>
-      <main>
-        <div>
-          <label>Número de Local: </label>
-          <input 
-            type="text" 
-            value={localNumber} 
-            onChange={(e) => setLocalNumber(e.target.value)} 
-          />
-        </div>
-        <Scanner onScan={handleScan} />
-        <p>Código escaneado: {scannedCode}</p>
-      </main>
-      <footer>
-        <p>Desarrollado por [Tu Nombre]</p>
-      </footer>
+    <div>
+      {!isScanning && <button onClick={startScanning}>Iniciar escaneo</button>}
+      <div id="scanner-container"></div>
     </div>
   );
 }
 
-export default App;
+export default ScannerComponent;

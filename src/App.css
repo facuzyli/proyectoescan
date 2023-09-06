@@ -36,3 +36,9 @@
     transform: rotate(360deg);
   }
 }
+
+#scanner-container {
+  width: 780px;
+  height: 480px;
+  border: 1px solid #ccc;
+}
